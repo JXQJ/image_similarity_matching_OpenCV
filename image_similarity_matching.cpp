@@ -5,13 +5,13 @@ int main(void)
 {
 	vector<Mat> data = get_images();
 	show_images("Original", data, 5);
-	
-	vector<vector<Mat> > histograms = get_histograms(data, 4, 5, 5);
+
+	vector<vector<Mat> > histograms = get_histograms(data, 2, 6, 5);
 	show_images("Histograms", histograms[1], 5);
 
-	vector<Mat> color_match = get_top_three_color(histograms[0], data);
-	show_images("COLOR", color_match, color_match.size()/8);
-
+	vector<int> score;
+	vector<Mat> color_match = get_top_three_color(histograms[0], data, score);
+	show_images("COLOR", color_match, 10);
 
 	while (1)
 	{
@@ -20,17 +20,32 @@ int main(void)
 	return 0;
 }
 
-vector<Mat> get_top_three_color(vector<Mat> hist_list, vector<Mat> data)
+vector<Mat> get_top_three_color(vector<Mat> hist_list, vector<Mat> data, vector<int> &score)
 {
+	int Crowd[40][40];
+	ifstream f("Crowd.txt");
+	int m = 40;
+	for (int i = 0; i < m; i++)
+	{
+		for (int j = 0; j < m; j++)
+		{
+			f >> Crowd[i][j];
+		}
+	}
+
+
 	vector<Mat> color_match;
 	for (size_t img1 = 0; img1 < data.size(); img1++)
 	{
+		int votes = 0;
 		cout << "Image1= i" << img1 + 1 << endl;
-		color_match.push_back(data[img1]);
+		Mat image_1 = data[img1].clone();
+		rectangle(image_1, cv::Point(0,0), cv::Point(25,25), cv::Scalar(0,0,0,.5), CV_FILLED, 8, 0);
+		putText(image_1, to_string(img1+1),cv::Point(5,15), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255,255,255,0),2,8,false);
+		color_match.push_back(image_1);
 		int min_index[] = {40, 40, 40};
 		for (size_t min_distance_no = 0; min_distance_no < 3; min_distance_no++)
 		{
-
 			float minimum = 10;
 
 			cout << "Finding minimum " << min_distance_no + 1 << endl;
@@ -47,9 +62,20 @@ vector<Mat> get_top_three_color(vector<Mat> hist_list, vector<Mat> data)
 					min_index[min_distance_no] = img2;
 				}
 			}
+			votes += Crowd[img1][min_index[min_distance_no]];
 			cout << "The no:" << min_distance_no + 1 << " minimum distance for image i" << img1 + 1 << " is " << minimum << " at index " << min_index[min_distance_no] << endl;
-			color_match.push_back(data[min_index[min_distance_no]]);
+			
+			Mat img_copy = data[min_index[min_distance_no]].clone();
+			rectangle(img_copy, cv::Point(0,0), cv::Point(33,20), cv::Scalar(0,0,0,.5), CV_FILLED, 8, 0);
+			putText(img_copy, to_string(min_index[min_distance_no] + 1),cv::Point(5,15), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255,255,255,0),2,8,false);
+			
+			color_match.push_back(img_copy);
 		}
+		score.push_back(votes);
+		Mat query_info = Mat::zeros(data[0].rows, data[0].cols, CV_8UC3);
+		putText(query_info, "Score:" ,cv::Point(10,10), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255,255,255,0),2,8,false);
+		putText(query_info, to_string(votes) ,cv::Point(20,30), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255,255,255,0),2,8,false);
+		color_match.push_back(query_info);
 	}
 	return color_match;
 }
@@ -164,7 +190,7 @@ vector<vector<Mat> > get_histograms(vector<Mat> data, int blue_bins, int green_b
 
 void show_images(const char *title, vector<Mat> data, int rows)
 {
-	const int WINDOW_SIZE = 700;
+	const int WINDOW_SIZE = 1000;
 	Mat result = makeCanvas(data, WINDOW_SIZE, rows);
 	namedWindow(title, WINDOW_NORMAL);
 	imshow(title, result);

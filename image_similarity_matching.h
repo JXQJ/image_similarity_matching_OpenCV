@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <fstream> 
 
 using namespace std;
 using namespace cv;
@@ -19,7 +20,7 @@ void die(const char *msg)
 
 
 vector<Mat> get_images();
-vector<Mat> get_top_three_color(vector<Mat> hist_list, vector<Mat> data);
+vector<Mat> get_top_three_color(vector<Mat> hist_list, vector<Mat> data, vector<int> &score);
 void show_images(const char *title, vector<Mat> data, int rows);
 vector<vector<Mat> > get_histograms(vector<Mat> data, int blue_bins, int green_bins, int red_bins);
 float get_L1_norm(Mat hist,Mat hist2);
